@@ -1,20 +1,34 @@
 # LatencyGuard AI
 
-LatencyGuard AI is a deterministic incident-triage system for backend, DevOps, and SRE workflows.
+LatencyGuard AI is a practical project that I built to help analyze cloud and SRE telemetry problems.
 
-It analyzes p95/p99 latency, CPU, memory, database latency, error rate, and request traffic to identify likely causes of service degradation, verify the diagnosis, and generate evidence-backed investigation steps.
+It analyzes **p95/p99 latency, CPU, memory, database latency, error rate, and request traffic** to identify likely causes of service degradation, verify the diagnosis, and generate evidence-backed investigation steps.
+
+My main goal with this project was not only to identify a problem, but also to verify the diagnosis, provide clear evidence, detect when another cause may also be possible, and give useful investigation recommendations to a cloud engineer or SRE.
+
+One important engineering decision was **not to add an LLM or ML model when it was not necessary**. We made this decision only after completing a full engineering evaluation of what an LLM or ML model could add to the solution, including its potential benefits, measurable impact, complexity, dependencies, nondeterminism, and possible failure modes.
+
+The evaluation showed that the deterministic solution had already improved accuracy from **60% to 100%**, with independent verification and reproducible results. Adding an LLM or ML model at this stage did not provide a demonstrated improvement and would have introduced unnecessary complexity.
+
+The system remains **deterministic, explainable, reproducible, and easy to test**. It does not automatically make changes to production systems; final investigation and action remain under human control.
 
 ## Results
 
 | Version | Result |
+
 |---|---:|
+
 | Baseline | 9/15 correct (60.0%) |
+
 | Context-Aware Diagnosis | 15/15 correct (100.0%) |
+
 | Independent Verification | 15/15 verified |
+
 | Confidence | 14 high, 1 medium, 0 low |
+
 | Final Test Suite | 14 tests passed |
 
-**Primary improvement: 60% → 100% accuracy (+40 percentage points).**
+**Primary improvement on the frozen 15-case evaluation set: 60% → 100% accuracy (+40 percentage points).**
 
 ---
 
@@ -31,22 +45,39 @@ LatencyGuard AI uses telemetry context and relationships between metrics rather 
 ## Architecture
 
 ```text
+
 Service Telemetry
+
        ↓
+
 Context-Aware Diagnosis
-     advanced.py
+
+     [advanced.py](http://advanced.py)
+
        ↓
+
 Likely Cause
+
        ↓
+
 Independent Verification
-     verifier.py
+
+     [verifier.py](http://verifier.py)
+
        ↓
+
 Evidence + Confidence
+
        ↓
+
 Incident Triage Report
-      report.py
+
+      [report.py](http://report.py)
+
        ↓
+
 Human Engineer
+
 ```
 
 The system does **not** automatically modify production systems.
@@ -68,17 +99,29 @@ LatencyGuard AI detects:
 Telemetry includes:
 
 ```json
+
 {
+
   "service": "reporting-api",
+
   "p95_ms": 1050,
+
   "p99_ms": 2800,
+
   "cpu_percent": 79,
+
   "memory_percent": 74,
+
   "db_latency_ms": 720,
+
   "error_rate": 0.02,
+
   "request_rate": 980,
+
   "baseline_request_rate": 400
+
 }
+
 ```
 
 ---
@@ -90,7 +133,9 @@ The baseline uses simple absolute thresholds for CPU, traffic, memory, database 
 ### Result
 
 ```text
+
 9/15 correct = 60.0%
+
 ```
 
 Six cases failed because absolute thresholds either missed contextual anomalies or produced false positives.
@@ -120,10 +165,13 @@ Examples:
 Example:
 
 ```text
+
 request_rate = 980
+
 baseline_request_rate = 400
 
 980 / 400 = 2.45x baseline
+
 ```
 
 The baseline missed this because `980 < 1000`. The advanced version recognizes the relative traffic anomaly when latency is also degraded.
@@ -131,11 +179,15 @@ The baseline missed this because `980 < 1000`. The advanced version recognizes t
 ### Result
 
 ```text
+
 Baseline:  9/15  = 60.0%
+
 Advanced: 15/15 = 100.0%
 
 Improvement: +40 percentage points
+
 Regressions: 0
+
 ```
 
 ---
@@ -147,13 +199,21 @@ A correct classification does not guarantee that the telemetry strongly or uniqu
 `verifier.py` independently checks the claimed diagnosis and returns:
 
 ```python
+
 {
+
     "diagnosis": "traffic_spike",
+
     "verified": True,
+
     "evidence": [...],
+
     "confidence": "medium",
+
     "competing_patterns": ["database_latency"]
+
 }
+
 ```
 
 The verifier does not read expected labels, change the diagnosis, or perform remediation.
@@ -161,11 +221,15 @@ The verifier does not read expected labels, change the diagnosis, or perform rem
 ### Result
 
 ```text
+
 15/15 diagnoses verified
 
 High confidence:   14
+
 Medium confidence:  1
+
 Low confidence:     0
+
 ```
 
 Tests also confirm that unsupported CPU/traffic diagnoses and unknown labels are rejected.
@@ -177,22 +241,35 @@ Tests also confirm that unsupported CPU/traffic diagnoses and unknown labels are
 Case 10 demonstrates why verification is useful:
 
 ```text
+
 Service: reporting-api
+
 Request rate: 980
+
 Baseline: 400
+
 Traffic ratio: 2.45x
+
 p95: 1050 ms
+
 p99: 2800 ms
+
 DB latency: 720 ms
+
 ```
 
 Result:
 
 ```text
+
 Diagnosis: traffic_spike
+
 Verified: yes
+
 Confidence: medium
+
 Competing pattern: database_latency
+
 ```
 
 Instead of pretending there is only one possible cause, LatencyGuard AI surfaces the competing database pattern for human investigation.
@@ -206,23 +283,35 @@ Instead of pretending there is only one possible cause, LatencyGuard AI surfaces
 Example:
 
 ```text
+
 Service: reporting-api
+
 Diagnosis: traffic_spike
+
 Verified: yes
+
 Confidence: medium
+
 Competing patterns: database_latency
 
 Evidence:
+
 - request rate is 2.45x baseline
+
 - p95/p99 latency is elevated
 
 Recommended investigation:
+
 - Investigate database latency as a competing cause.
+
 - Confirm request rate versus baseline.
+
 - Identify the source of additional traffic.
+
 - Review whether latency increased with traffic.
 
 No production changes were automatically performed.
+
 ```
 
 This gives engineers a diagnosis, evidence, confidence level, ambiguity warning, and investigation steps.
@@ -232,10 +321,15 @@ This gives engineers a diagnosis, evidence, confidence level, ambiguity warning,
 ## Improvement Changelog
 
 | Stage | Change | Result |
+
 |---|---|---|
+
 | Baseline | Absolute threshold rules | 60% accuracy |
+
 | Iteration 1 | Added contextual/relational telemetry reasoning | 100% accuracy |
+
 | Iteration 2 | Added independent evidence verification | 15/15 verified |
+
 | Final | Added human-readable incident reports | Evidence + investigation steps |
 
 All improvements were kept because they produced measurable value without adding unnecessary runtime complexity.
@@ -245,27 +339,38 @@ All improvements were kept because they produced measurable value without adding
 ## Final Comparison
 
 | Capability | Baseline | Final |
-|---|---|---|
+
+|---|---:|---:|
+
 | Service baseline context | No | Yes |
+
 | Relative traffic analysis | No | Yes |
+
 | Latency correlation | No | Yes |
+
 | Independent verification | No | Yes |
+
 | Confidence scoring | No | Yes |
+
 | Competing-cause detection | No | Yes |
+
 | Evidence | No | Yes |
+
 | Investigation recommendations | No | Yes |
+
 | Automatic production changes | No | No |
+
 | Accuracy | **60%** | **100%** |
 
 ---
 
-## Main Failure Mode / Hot Take
+## Main Failure Mode / Engineering Takeaway
 
 The baseline's biggest weakness was **lack of context**.
 
 High CPU or traffic alone does not necessarily indicate an incident, while a metric below a global threshold may still be abnormal for a specific service.
 
-**Hot take:** more sophisticated models are not automatically better. For this focused problem, deterministic contextual reasoning plus independent verification is easier to test, reproduce, audit, and explain than adding an unnecessary LLM or ML dependency.
+**Engineering takeaway:** more sophisticated models are not automatically better. For this focused problem, deterministic contextual reasoning plus independent verification is easier to test, reproduce, audit, and explain than adding an unnecessary LLM or ML dependency.
 
 ---
 
@@ -282,50 +387,67 @@ No API key or external AI service is required.
 ### Clone
 
 ```bash
-git clone https://github.com/david8474/latencyguard-ai.git
+
+git clone [https://github.com/david8474/latencyguard-ai.git](https://github.com/david8474/latencyguard-ai.git)
+
 cd latencyguard-ai
+
 ```
 
 ### Install pytest
 
 ```bash
+
 python -m pip install pytest
+
 ```
 
 ### Run baseline
 
 ```bash
-python evaluate.py
+
+python [evaluate.py](http://evaluate.py)
+
 ```
 
 Expected:
 
 ```text
+
 Accuracy: 9/15 (60.0%)
+
 ```
 
 ### Run advanced evaluation
 
 ```bash
-python evaluate_advanced.py
+
+python evaluate_[advanced.py](http://advanced.py)
+
 ```
 
 Expected:
 
 ```text
+
 Accuracy: 15/15 (100.0%)
+
 ```
 
 ### Run tests
 
 ```bash
+
 python -m pytest -v
+
 ```
 
 Expected:
 
 ```text
+
 14 passed
+
 ```
 
 ---
@@ -333,18 +455,45 @@ Expected:
 ## Project Structure
 
 ```text
+
 latencyguard-ai/
-├── baseline.py
-├── advanced.py
-├── verifier.py
-├── report.py
-├── evaluate.py
-├── evaluate_advanced.py
+
+├── [baseline.py](http://baseline.py)
+
+├── [advanced.py](http://advanced.py)
+
+├── [verifier.py](http://verifier.py)
+
+├── [report.py](http://report.py)
+
+├── [evaluate.py](http://evaluate.py)
+
+├── evaluate_[advanced.py](http://advanced.py)
+
 ├── data/
+
 │   └── incidents.json
-└── tests/
-    ├── test_verifier.py
-    └── test_report.py
+
+├── tests/
+
+│   ├── test_[verifier.py](http://verifier.py)
+
+│   └── test_[report.py](http://report.py)
+
+└── trajectories/
+
+    ├── [README.md](http://README.md)
+
+    ├── [01-baseline-analysis.md](http://01-baseline-analysis.md)
+
+    ├── [02-context-aware-diagnosis.md](http://02-context-aware-diagnosis.md)
+
+    ├── [03-verifier.md](http://03-verifier.md)
+
+    ├── [04-report-layer.md](http://04-report-layer.md)
+
+    └── [05-chatgpt-review-trace.md](http://05-chatgpt-review-trace.md)
+
 ```
 
 ---
@@ -354,7 +503,9 @@ latencyguard-ai/
 The primary metric is:
 
 ```text
+
 correct diagnoses / total incidents
+
 ```
 
 Both baseline and advanced versions use the same frozen 15-case evaluation set.
@@ -392,6 +543,8 @@ Representative trajectories include:
 
 These trajectories document the prompts, reasoning, revisions, and measured results that led from the 60% baseline to the final system.
 
+The representative development traces are available in `trajectories/`](trajectories/).
+
 ---
 
 ## Technologies
@@ -408,6 +561,6 @@ The final runtime is deterministic and requires **no LLM, external model, or API
 
 ## Conclusion
 
-LatencyGuard AI improved root-cause diagnosis from **60% to 100%** while adding independent verification, confidence scoring, competing-cause detection, and evidence-backed investigation recommendations.
+LatencyGuard AI improved root-cause diagnosis from **60% to 100% on the frozen 15-case evaluation set** while adding independent verification, confidence scoring, competing-cause detection, and evidence-backed investigation recommendations.
 
 The key lesson: for a focused operational problem, **context, verification, and measurement can provide more value than unnecessary model complexity.**
