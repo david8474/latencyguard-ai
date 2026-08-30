@@ -52,7 +52,7 @@ Service Telemetry
 
 Context-Aware Diagnosis
 
-     [advanced.py](http://advanced.py)
+    [advanced.py](http://advanced.py)
 
        ↓
 
@@ -62,7 +62,7 @@ Likely Cause
 
 Independent Verification
 
-     [verifier.py](http://verifier.py)
+    [verifier.py](http://verifier.py)
 
        ↓
 
@@ -72,7 +72,7 @@ Evidence + Confidence
 
 Incident Triage Report
 
-      [report.py](http://report.py)
+    [report.py](http://report.py)
 
        ↓
 
@@ -96,7 +96,7 @@ LatencyGuard AI detects:
 - `tail_latency_anomaly`
 - `normal`
 
-Telemetry includes:
+Example telemetry:
 
 ```json
 
@@ -272,7 +272,7 @@ Competing pattern: database_latency
 
 ```
 
-Instead of pretending there is only one possible cause, LatencyGuard AI surfaces the competing database pattern for human investigation.
+Instead of assuming there is only one possible cause, LatencyGuard AI surfaces the competing database pattern for human investigation.
 
 ---
 
@@ -314,7 +314,9 @@ No production changes were automatically performed.
 
 ```
 
-This gives engineers a diagnosis, evidence, confidence level, ambiguity warning, and investigation steps.
+This gives engineers a diagnosis, supporting evidence, confidence level, ambiguity warning, and investigation steps.
+
+Recommendations are limited to **four steps**, and an unverified diagnosis is explicitly identified as **not confirmed**.
 
 ---
 
@@ -450,6 +452,22 @@ Expected:
 
 ```
 
+### Verified Reproducibility
+
+The README reproduction workflow was independently checked against the repository files.
+
+```text
+
+Baseline       → 9/15  (60%)
+
+Advanced       → 15/15 (100%)
+
+pytest         → 14 passed
+
+```
+
+These results reproduce the metrics documented by the project.
+
 ---
 
 ## Project Structure
@@ -530,7 +548,7 @@ Consequential actions remain under human control.
 
 ## Agent / Development Trajectories
 
-The project was developed with AI-assisted engineering using **ChatGPT and Cursor**.
+The project was developed with AI-assisted engineering using **ChatGPT and Cursor**, with human review and approval throughout the development process.
 
 Representative trajectories include:
 
@@ -539,11 +557,11 @@ Representative trajectories include:
 3. independent verifier design
 4. negative reliability testing
 5. incident-report design
-6. human approval and evaluation checkpoints
+6. architecture review and human decision checkpoints
 
-These trajectories document the prompts, reasoning, revisions, and measured results that led from the 60% baseline to the final system.
+These trajectories document the reasoning, revisions, engineering decisions, and measured results that led from the 60% baseline to the final system.
 
-The representative development traces are available in `trajectories/`](trajectories/).
+Representative development traces are available in the `trajectories/`](trajectories/) directory.
 
 ---
 
@@ -555,12 +573,16 @@ The representative development traces are available in `trajectories/`](trajecto
 - Cursor
 - ChatGPT
 
-The final runtime is deterministic and requires **no LLM, external model, or API key**.
+ChatGPT and Cursor were used during development, review, and documentation. They are **not runtime dependencies**.
+
+The final runtime is deterministic and requires **no LLM, external model, API key, or network service**.
 
 ---
 
 ## Conclusion
 
 LatencyGuard AI improved root-cause diagnosis from **60% to 100% on the frozen 15-case evaluation set** while adding independent verification, confidence scoring, competing-cause detection, and evidence-backed investigation recommendations.
+
+The final implementation is deterministic, reproducible, explainable, and keeps consequential production actions under human control.
 
 The key lesson: for a focused operational problem, **context, verification, and measurement can provide more value than unnecessary model complexity.**
